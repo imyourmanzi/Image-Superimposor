@@ -1,0 +1,6 @@
+# environment
+env/
+
+# images
+img/
+annotations.json
