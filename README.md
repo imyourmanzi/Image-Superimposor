@@ -8,20 +8,18 @@ Mirror the following for correct setup.
 
 ### Directory Structure
 ```
-Image Superimoposer
- |-- image_create.py
- |-- requirements.txt
- |
- |-- img/
- |    |-- annotations.json (auto-generated/overwritten)
- |    |
- |    |-- subject/
- |    |    | ...
- |    |
- |    |-- background/
- |    |    | ...
- |    |
- |    |-- generated/
+Image-Superimoposer
+├── README.md
+├── image_create.py
+├── img
+│   ├── annotations.json (auto-generated; overwritten on run)
+│   ├── background
+│   │   └── ...
+│   ├── generated
+│   │   └── ...
+│   └── subject
+│       └── ...
+└── requirements.txt
 ```
 
 ### Install

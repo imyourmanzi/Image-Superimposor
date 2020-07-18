@@ -11,6 +11,7 @@ import json
 import copy
 
 # TODO: add multi-proccessing
+# TODO: add command line options
 
 """
 Annotation Format:
