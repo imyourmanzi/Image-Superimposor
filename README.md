@@ -14,10 +14,10 @@ Image-Superimoposer
 ├── README.md
 ├── image_create.py
 ├── img
-│   ├── [annotations.json]
 │   ├── background
 │   │   └── ...
 │   ├── [generated]
+│   │   ├── [annotations.json]
 │   │   └── ...
 │   └── subject
 │       └── ...
