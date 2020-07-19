@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """
-Matt Manzi
+Author: Matt Manzi
 Created: 2020-07-17
-
+Description:
 Overlay each subject image on each background N times, at random positions and
 sizes, and generate the relevant annotation for Apple's CreateML.  The generated
 image file will have the format of the background image that is used.
+
+Usage: ./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-v] [-q] label
 
 Annotation Format:
 [
