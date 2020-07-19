@@ -32,11 +32,11 @@ Annotation Format:
 ]
 
 TODOS:
-    - multiprocessing for speed (split photo batches by background)
+    - (future) multiprocessing for speed (split photo batches by background)
     - (future) subject image rotation
 """
 
-import logging, time, os, json, random, copy
+import logging, os, time, copy, random, json
 from argparse import ArgumentParser
 from PIL import Image
 
@@ -74,7 +74,7 @@ VERBOSITY = logging.WARNING
 
 logging.basicConfig(
     level=VERBOSITY,
-    format="[%(threadName)s] %(levelname)s: %(message)s"
+    format="[%(processName)s] %(levelname)s: %(message)s"
 )
 log = logging.getLogger("Image-Superimposer")
 
@@ -108,6 +108,7 @@ args = parser.parse_args()
 
 # set user log level
 if args.verbose:
+    # max is to ensure that granularity does not cross into NOTSET
     log.setLevel(max(VERBOSITY - (args.verbose * logging.DEBUG), logging.DEBUG))
 elif args.quiet:
     log.setLevel(VERBOSITY + (args.quiet * logging.DEBUG))
@@ -310,5 +311,5 @@ def place_on_background(subj_p, bkgd_p, annotation):
 
 
 
-
-main()
+if __name__ == "__main__":
+    main()
