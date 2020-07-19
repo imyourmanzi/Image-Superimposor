@@ -41,7 +41,9 @@ chmod u+x image_create.py
 ### Command Line Options
 
 ```
-usage: image_create.py [-h] [-n VARIATIONS] [--no-scale] [-v] [-q] label
+usage: image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v]
+                       [-q]
+                       label
 
 Generates composite photos for CreateML object recognition from subject and
 background images.
@@ -57,6 +59,9 @@ optional arguments:
   --no-scale            do not change the scale of the subject image
                         (unexepected behavior for subject image larger than
                         background image)
+  -f OUTPUT_FMT, --output-fmt OUTPUT_FMT
+                        a string representing the Pillow library format to
+                        save the generated composite image as
   -v, --verbose         increase the verbosity of log output (takes precedence
                         over --quiet)
   -q, --quiet           decrease the verbosity of log output (--verbose takes

@@ -7,7 +7,10 @@ Overlay each subject image on each background N times, at random positions and
 sizes, and generate the relevant annotation for Apple's CreateML.  The generated
 image file will have the format of the background image that is used.
 
-Usage: ./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-v] [-q] label
+Usage:
+./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v]
+                  [-q]
+                  label
 
 Annotation Format:
 [
@@ -41,10 +44,12 @@ from PIL import Image
 
 ################################## CONSTANTS ##################################
 
+
 # generation params
 N = 10
 SCALE_MAX = 80
 SCALE_MIN = 5
+
 
 # fs structure
 IMG_DIR = "img"
@@ -60,6 +65,8 @@ VERBOSITY = logging.WARNING
 
 
 #################################### CODE ####################################
+
+
 
 
 #### MARK: Globals Init
@@ -83,6 +90,10 @@ parser.add_argument("--no-scale",
     action="store_true",
     help="do not change the scale of the subject image (unexepected behavior \
     for subject image larger than background image)")
+parser.add_argument("-f", "--output-fmt",
+    default=None,
+    help="a string representing the Pillow library format to save the \
+    generated composite image as")
 parser.add_argument("-v", "--verbose",
     action="count",
     default=0,
@@ -93,6 +104,7 @@ parser.add_argument("-q", "--quiet",
     help="decrease the verbosity of log output (--verbose takes precedence)")
 args = parser.parse_args()
 
+
 # set user log level
 if args.verbose:
     log.setLevel(max(VERBOSITY - (args.verbose * logging.DEBUG), logging.DEBUG))
@@ -100,9 +112,12 @@ elif args.quiet:
     log.setLevel(VERBOSITY + (args.quiet * logging.DEBUG))
 
 
+
+
 #### MARK: Script Execution
 
 def main():
+
 
     # set annotation label
     ano_tmp = {
@@ -121,11 +136,13 @@ def main():
     }
     annotations = []
 
+
     # load image folders
     img_dir = os.path.join(os.getcwd(), IMG_DIR)
     subj_dir = os.path.join(img_dir, IMG_SUBJ)
     background_dir = os.path.join(img_dir, IMG_BKGD)
     dest_dir = os.path.join(img_dir, IMG_DEST)
+
 
     # ensure dest directory exists
     try:
@@ -142,13 +159,12 @@ def main():
     for bkgd_file in os.listdir(background_dir):
         log.debug("Opening background file: %s", bkgd_file)
 
-        # choose extension from background, as per rules of paste
-        ext = bkgd_file.split(".")[-1]
-        log.debug("Set output extension: %s", ext)
-
         bkgd_p = Image.open(os.path.join(background_dir, bkgd_file))
-        bkgd_file = bkgd_file.rstrip("." + ext)
-        log.debug("Opened background: %s (ext stripped)", bkgd_file)
+        log.debug("Opened background: %s", bkgd_file)
+
+        bkgd_ext = bkgd_file.split(".")[-1]
+        bkgd_file = bkgd_file.rstrip("." + bkgd_ext)
+        log.debug("Stripped background ext: %s", bkgd_ext)
 
 
         # for each subject
@@ -156,8 +172,11 @@ def main():
             log.debug("Opening subject file: %s", subj_file)
 
             subj_p = Image.open(os.path.join(subj_dir, subj_file))
-            subj_file = subj_file.rstrip("." + ext)
-            log.debug("Opened subject: %s (no ext)", subj_file)
+            log.debug("Opened subject: %s", subj_file)
+
+            subj_ext = subj_file.split(".")[-1]
+            subj_file = subj_file.rstrip("." + subj_ext)
+            log.debug("Stripped subject ext: %s", subj_ext)
 
 
             # for N variations
@@ -167,10 +186,15 @@ def main():
                 ano = copy.deepcopy(ano_tmp)
                 log.debug("Created template annotation deep copy")
 
+
                 # compose filename
-                gen_filename = ".".join([subj_file, bkgd_file, str(i), ext])
+                gen_ext = args.output_fmt.lower() \
+                    if args.output_fmt \
+                    else bkgd_ext
+                gen_filename = ".".join([subj_file, bkgd_file, str(i), gen_ext])
                 ano["imagefilename"] = gen_filename
                 log.debug("Set generated filename: %s", gen_filename)
+
 
                 # create composite image
                 subj_tmp = subj_p
@@ -183,9 +207,11 @@ def main():
                 bkgd_tmp = bkgd_p.copy()
                 bkgd_tmp.paste(subj_tmp, (pos_x, pos_y))
 
+
                 # save new image and annotation
                 try:
-                    bkgd_tmp.save(os.path.join(dest_dir, gen_filename))
+                    bkgd_tmp.save(os.path.join(dest_dir, gen_filename),
+                        format=args.output_fmt)
                     annotations.append(ano)
 
                 except ValueError:
@@ -217,11 +243,14 @@ def main():
 
     log.info("====================End Image Processing====================")
 
+
     # store annotations
     annotations_file = open(os.path.join(dest_dir, ANO_FILE), "w")
     annotations_file.write(json.dumps(annotations))
     annotations_file.close()
     log.debug("Wrote annotations to file: %s", ANO_FILE)
+
+
 
 
 #### MARK: Helper functions
