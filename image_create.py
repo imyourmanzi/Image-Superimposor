@@ -9,7 +9,9 @@ sizes, and generate the relevant annotation for Apple's CreateML.  The generated
 image file will have the format of the background image that is used.
 
 Usage:
-./image_create.py [-h] [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
+./image_create.py [-h]
+                  [--color-temp {1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000}]
+                  [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
                   [--inset-left INSET_LEFT] [--inset-right INSET_RIGHT]
                   [--inset-top INSET_TOP] [-n VARIATIONS] [--no-scale] [-q] [-v]
                   label
@@ -51,6 +53,27 @@ from PIL import Image
 N = 10
 SCALE_MAX = 80
 SCALE_MIN = 5
+COLOR_TEMPS = {
+    1000: (255,56,0),
+    1500: (255,109,0),
+    2000: (255,137,18),
+    2500: (255,161,72),
+    3000: (255,180,107),
+    3500: (255,196,137),
+    4000: (255,209,163),
+    4500: (255,219,186),
+    5000: (255,228,206),
+    5500: (255,236,224),
+    6000: (255,243,239),
+    6500: (255,249,253),
+    7000: (245,243,255),
+    7500: (235,238,255),
+    8000: (227,233,255),
+    8500: (220,229,255),
+    9000: (214,225,255),
+    9500: (208,222,255),
+    10000: (204,219,255)
+} # from http://www.vendian.org/mncharity/dir3/blackbody/
 
 
 # fs structure
@@ -91,6 +114,10 @@ Generates composite photos for CreateML object recognition from subject and
 background images.""")
 parser.add_argument("label",
     help="the name of the label for the subject's annotation")
+parser.add_argument("--color-temp",
+    choices=COLOR_TEMPS.keys(),
+    type=int,
+    help="the color temperature to convert all images to")
 parser.add_argument("-f", "--output-fmt",
     default=None,
     help="a string representing the Pillow library format to save the \
@@ -179,6 +206,7 @@ def main():
         "imagefilename": None
     }
     annotations = []
+    log.debug("Using label: %s", args.label)
 
     insets = (
         args.inset_top,
@@ -219,6 +247,12 @@ def main():
         bkgd_file = bkgd_file.rstrip("." + bkgd_ext)
         log.debug("Stripped background ext: %s", bkgd_ext)
 
+        # convert background color temp
+        if args.color_temp:
+            bkgd_tmp = convertColorTemperature(bkgd_p, args.color_temp)
+            bkgd_p.close()
+            bkgd_p = bkgd_tmp
+
 
         # for each subject
         for subj_file in os.listdir(subj_dir):
@@ -230,6 +264,12 @@ def main():
             subj_ext = subj_file.split(".")[-1]
             subj_file = subj_file.rstrip("." + subj_ext)
             log.debug("Stripped subject ext: %s", subj_ext)
+
+            # convert background color temp
+            if args.color_temp:
+                subj_tmp = convertColorTemperature(subj_p, args.color_temp)
+                subj_p.close()
+                subj_p = subj_tmp
 
 
             # for N variations
@@ -251,13 +291,16 @@ def main():
 
                 # create composite image
                 subj_tmp = subj_p
+                # temporary subject (points to original) #
                 if not args.no_scale:
                     log.debug("Will scale subject")
                     subj_tmp = scaleToBackground(subj_tmp, bkgd_p, ano, insets)
+                    # temporary subject is now separate, original untouched #
 
                 pos_x, pos_y = placeOnBackground(subj_tmp, bkgd_p, ano, insets)
 
                 bkgd_tmp = bkgd_p.copy()
+                # temporary background copied for paste, original untouched #
                 bkgd_tmp.paste(subj_tmp, (pos_x, pos_y))
 
 
@@ -350,6 +393,27 @@ def scaleToBackground(subj_p, bkgd_p, annotation, insets):
     log.debug("Updated annotation sizes")
 
     return image
+
+
+
+
+def convertColorTemperature(img_p, temp):
+    """Adjusts the image to match the chosen color temperature
+
+    This function was inspired by this StackOverflow answer:
+    https://stackoverflow.com/a/11888449
+
+    Returns:
+        Image
+        the color-temperature-adjusted image
+    """
+    r, g, b = COLOR_TEMPS[temp]
+    matrix = (
+        r/255.0, 0.0,     0.0,     0.0,
+        0.0,     g/255.0, 0.0,     0.0,
+        0.0,     0.0,     b/255.0, 0.0
+    )
+    return img_p.convert('RGB', matrix)
 
 
 

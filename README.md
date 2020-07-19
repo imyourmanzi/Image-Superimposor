@@ -41,7 +41,9 @@ chmod u+x image_create.py
 ### Command Line Options
 
 ```
-./image_create.py [-h] [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
+./image_create.py [-h]
+                  [--color-temp {1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000}]
+                  [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
                   [--inset-left INSET_LEFT] [--inset-right INSET_RIGHT]
                   [--inset-top INSET_TOP] [-n VARIATIONS] [--no-scale] [-q] [-v]
                   label
@@ -54,6 +56,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  --color-temp {1000,1500,2000,2500,3000,3500,4000,4500,5000,5500,6000,6500,7000,7500,8000,8500,9000,9500,10000}
+                        the color temperature to convert all images to
   -f OUTPUT_FMT, --output-fmt OUTPUT_FMT
                         a string representing the Pillow library format to
                         save the generated composite image as
