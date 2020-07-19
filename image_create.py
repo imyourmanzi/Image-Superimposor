@@ -2,6 +2,7 @@
 """
 Author: Matt Manzi
 Created: 2020-07-17
+
 Description:
 Overlay each subject image on each background N times, at random positions and
 sizes, and generate the relevant annotation for Apple's CreateML.  The generated
@@ -31,11 +32,11 @@ Annotation Format:
 ]
 
 TODOS:
-    - multiprocessing for multi (split photo batches by background)
+    - multiprocessing for speed (split photo batches by background)
     - (future) subject image rotation
 """
 
-import logging, os, json, random, copy
+import logging, time, os, json, random, copy
 from argparse import ArgumentParser
 from PIL import Image
 
@@ -73,7 +74,7 @@ VERBOSITY = logging.WARNING
 
 logging.basicConfig(
     level=VERBOSITY,
-    format="[%(asctime)s] %(name)s %(levelname)s: %(message)s"
+    format="[%(threadName)s] %(levelname)s: %(message)s"
 )
 log = logging.getLogger("Image-Superimposer")
 
@@ -82,6 +83,10 @@ Generates composite photos for CreateML object recognition from subject and
 background images.""")
 parser.add_argument("label",
     help="the name of the label for the subject's annotation")
+parser.add_argument("-f", "--output-fmt",
+    default=None,
+    help="a string representing the Pillow library format to save the \
+    generated composite image as")
 parser.add_argument("-n", "--variations",
     type=int,
     default=N,
@@ -90,18 +95,14 @@ parser.add_argument("--no-scale",
     action="store_true",
     help="do not change the scale of the subject image (unexepected behavior \
     for subject image larger than background image)")
-parser.add_argument("-f", "--output-fmt",
-    default=None,
-    help="a string representing the Pillow library format to save the \
-    generated composite image as")
-parser.add_argument("-v", "--verbose",
-    action="count",
-    default=0,
-    help="increase the verbosity of log output (takes precedence over --quiet)")
 parser.add_argument("-q", "--quiet",
     action="count",
     default=0,
     help="decrease the verbosity of log output (--verbose takes precedence)")
+parser.add_argument("-v", "--verbose",
+    action="count",
+    default=0,
+    help="increase the verbosity of log output (takes precedence over --quiet)")
 args = parser.parse_args()
 
 
@@ -153,6 +154,7 @@ def main():
 
 
     log.info("===================Begin Image Processing===================")
+    started = time.time()
 
 
     # for each background
@@ -242,6 +244,7 @@ def main():
 
 
     log.info("====================End Image Processing====================")
+    log.info("Elapsed Time: %0.4fs", (time.time() - started))
 
 
     # store annotations
