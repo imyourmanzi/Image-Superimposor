@@ -6,7 +6,7 @@ This tool is built with [Pillow](https://pypi.org/project/Pillow/) and supports 
 
 ## Setup
 
-Mirror the following for correct setup.
+Mirror the following for correct setup.  Items in `[brackets]` do not need to be created manually and may be overwritten.
 
 ### Directory Structure
 ```
@@ -14,10 +14,10 @@ Image-Superimoposer
 ├── README.md
 ├── image_create.py
 ├── img
-│   ├── [annotations.json] (auto-generated; overwritten on run)
+│   ├── [annotations.json]
 │   ├── background
 │   │   └── ...
-│   ├── [generated] (auto-generated; conflicting filenames will be overwritten)
+│   ├── [generated]
 │   │   └── ...
 │   └── subject
 │       └── ...
@@ -41,9 +41,8 @@ chmod u+x image_create.py
 ### Command Line Options
 
 ```
-usage: image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v]
-                       [-q]
-                       label
+./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v] [-q]
+                  label
 
 Generates composite photos for CreateML object recognition from subject and
 background images.

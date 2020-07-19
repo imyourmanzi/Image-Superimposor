@@ -9,8 +9,7 @@ sizes, and generate the relevant annotation for Apple's CreateML.  The generated
 image file will have the format of the background image that is used.
 
 Usage:
-./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v]
-                  [-q]
+./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v] [-q]
                   label
 
 Annotation Format:
