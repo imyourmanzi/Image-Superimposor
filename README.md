@@ -41,7 +41,9 @@ chmod u+x image_create.py
 ### Command Line Options
 
 ```
-./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v] [-q]
+./image_create.py [-h] [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
+                  [--inset-left INSET_LEFT] [--inset-right INSET_RIGHT]
+                  [--inset-top INSET_TOP] [-n VARIATIONS] [--no-scale] [-q] [-v]
                   label
 
 Generates composite photos for CreateML object recognition from subject and
@@ -52,17 +54,33 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
+  -f OUTPUT_FMT, --output-fmt OUTPUT_FMT
+                        a string representing the Pillow library format to
+                        save the generated composite image as
+  --inset-bottom INSET_BOTTOM
+                        percentage of the subject image's height to exclude in
+                        the annotation from the bottom of the image (range:
+                        1–99%)
+  --inset-left INSET_LEFT
+                        percentage of the subject image's width to exclude in
+                        the annotation from the left of the image (range:
+                        1–99%)
+  --inset-right INSET_RIGHT
+                        percentage of the subject image's width to exclude in
+                        the annotation from the right of the image (range:
+                        1–99%)
+  --inset-top INSET_TOP
+                        percentage of the subject image's height to exclude in
+                        the annotation from the top of the image (range:
+                        1–99%)
   -n VARIATIONS, --variations VARIATIONS
                         the number of variations to make with each image and
                         background pair
   --no-scale            do not change the scale of the subject image
                         (unexepected behavior for subject image larger than
                         background image)
-  -f OUTPUT_FMT, --output-fmt OUTPUT_FMT
-                        a string representing the Pillow library format to
-                        save the generated composite image as
-  -v, --verbose         increase the verbosity of log output (takes precedence
-                        over --quiet)
   -q, --quiet           decrease the verbosity of log output (--verbose takes
                         precedence)
+  -v, --verbose         increase the verbosity of log output (takes precedence
+                        over --quiet)
 ```

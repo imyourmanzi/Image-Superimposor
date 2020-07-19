@@ -9,7 +9,9 @@ sizes, and generate the relevant annotation for Apple's CreateML.  The generated
 image file will have the format of the background image that is used.
 
 Usage:
-./image_create.py [-h] [-n VARIATIONS] [--no-scale] [-f OUTPUT_FMT] [-v] [-q]
+./image_create.py [-h] [-f OUTPUT_FMT] [--inset-bottom INSET_BOTTOM]
+                  [--inset-left INSET_LEFT] [--inset-right INSET_RIGHT]
+                  [--inset-top INSET_TOP] [-n VARIATIONS] [--no-scale] [-q] [-v]
                   label
 
 Annotation Format:
@@ -58,9 +60,16 @@ IMG_BKGD = "background"
 IMG_DEST = "generated"
 ANO_FILE = "annotations.json"
 
+
+# inset indicies
+TOP = 0
+RIGHT = 1
+BOTTOM = 2
+LEFT = 3
+
+
 # other
 VERBOSITY = logging.WARNING
-
 
 
 
@@ -73,7 +82,7 @@ VERBOSITY = logging.WARNING
 
 logging.basicConfig(
     level=VERBOSITY,
-    format="[%(processName)s] %(levelname)s: %(message)s"
+    format="%(levelname)s: %(message)s"
 )
 log = logging.getLogger("Image-Superimposer")
 
@@ -86,6 +95,22 @@ parser.add_argument("-f", "--output-fmt",
     default=None,
     help="a string representing the Pillow library format to save the \
     generated composite image as")
+parser.add_argument("--inset-bottom",
+    type=int,
+    help="percentage of the subject image's height to exclude in the \
+    annotation from the bottom of the image (range: 1–99%%)")
+parser.add_argument("--inset-left",
+    type=int,
+    help="percentage of the subject image's width to exclude in the \
+    annotation from the left of the image (range: 1–99%%)")
+parser.add_argument("--inset-right",
+    type=int,
+    help="percentage of the subject image's width to exclude in the \
+    annotation from the right of the image (range: 1–99%%)")
+parser.add_argument("--inset-top",
+    type=int,
+    help="percentage of the subject image's height to exclude in the \
+    annotation from the top of the image (range: 1–99%%)")
 parser.add_argument("-n", "--variations",
     type=int,
     default=N,
@@ -113,6 +138,24 @@ elif args.quiet:
     log.setLevel(VERBOSITY + (args.quiet * logging.DEBUG))
 
 
+# sanitize insets
+if args.inset_top and (args.inset_top > 99 or args.inset_top < 1):
+    log.warning("Ignoring top inset of %d%%", args.inset_top)
+    args.inset_top = None
+
+if args.inset_right and (args.inset_right > 99 or args.inset_right < 1):
+    log.warning("Ignoring right inset of %d%%", args.inset_right)
+    args.inset_right = None
+
+if args.inset_bottom and (args.inset_bottom > 99 or args.inset_bottom < 1):
+    log.warning("Ignoring bottom inset of %d%%", args.inset_bottom)
+    args.inset_bottom = None
+
+if args.inset_left and (args.inset_left > 99 or args.inset_left < 1):
+    log.warning("Ignoring left inset of %d%%", args.inset_left)
+    args.inset_left = None
+
+
 
 
 #### MARK: Script Execution
@@ -136,6 +179,14 @@ def main():
         "imagefilename": None
     }
     annotations = []
+
+    insets = (
+        args.inset_top,
+        args.inset_right,
+        args.inset_bottom,
+        args.inset_left
+    )
+    log.debug("Using insets: %s", insets)
 
 
     # load image folders
@@ -202,9 +253,9 @@ def main():
                 subj_tmp = subj_p
                 if not args.no_scale:
                     log.debug("Will scale subject")
-                    subj_tmp = scale_to_background(subj_tmp, bkgd_p, ano)
+                    subj_tmp = scaleToBackground(subj_tmp, bkgd_p, ano, insets)
 
-                pos_x, pos_y = place_on_background(subj_tmp, bkgd_p, ano)
+                pos_x, pos_y = placeOnBackground(subj_tmp, bkgd_p, ano, insets)
 
                 bkgd_tmp = bkgd_p.copy()
                 bkgd_tmp.paste(subj_tmp, (pos_x, pos_y))
@@ -258,7 +309,7 @@ def main():
 
 #### MARK: Helper functions
 
-def scale_to_background(subj_p, bkgd_p, annotation):
+def scaleToBackground(subj_p, bkgd_p, annotation, insets):
     """Scale the subject image up or down, relative to the background
 
     Returns:
@@ -275,17 +326,35 @@ def scale_to_background(subj_p, bkgd_p, annotation):
     subj_h = int(bkgd_h * scale)
     log.debug("Set subject sizes (w x h): (%d, %d)", subj_w, subj_h)
 
+    image = subj_p.resize((subj_w, subj_h))
+
     # update annotation
+    if insets[RIGHT]:
+        subj_w -= int((insets[RIGHT] / 100) * subj_w)
+        log.debug("Applied right-side inset of %d%%", insets[RIGHT])
+
+    if insets[LEFT]:
+        subj_w -= int((insets[LEFT] / 100) * subj_w)
+        log.debug("Applied left-side inset of %d%% to width", insets[LEFT])
+
+    if insets[TOP]:
+        subj_h -= int((insets[TOP] / 100) * subj_h)
+        log.debug("Applied top-side inset of %d%% to height", insets[TOP])
+
+    if insets[BOTTOM]:
+        subj_h -= int((insets[BOTTOM] / 100) * subj_h)
+        log.debug("Applied bottom-side inset of %d%%", insets[BOTTOM])
+
     annotation["annotation"][0]["coordinates"]["width"] = subj_w
     annotation["annotation"][0]["coordinates"]["height"] = subj_h
     log.debug("Updated annotation sizes")
 
-    return subj_p.resize((subj_w, subj_h))
+    return image
 
 
 
 
-def place_on_background(subj_p, bkgd_p, annotation):
+def placeOnBackground(subj_p, bkgd_p, annotation, insets):
     """Chooses a position for the subject image on the background
 
     Returns:
@@ -301,12 +370,22 @@ def place_on_background(subj_p, bkgd_p, annotation):
     position_y = random.randint(0, bkgd_h - subj_h)
     log.debug("Set subject position (x, y): (%d, %d)", position_x, position_y)
 
+    image_x, image_y = (position_x, position_y)
+
     # update annotation
+    if insets[LEFT]:
+        position_x += int((insets[LEFT] / 100) * subj_w)
+        log.debug("Applied left-side inset of %d%% to x-coord", insets[LEFT])
+
+    if insets[TOP]:
+        position_y -= int((insets[TOP] / 100) * subj_h)
+        log.debug("Applied top-side inset of %d%% to y-coord", insets[TOP])
+
     annotation["annotation"][0]["coordinates"]["y"] = position_y
     annotation["annotation"][0]["coordinates"]["x"] = position_x
     log.debug("Updated annotation position")
 
-    return (position_x, position_y)
+    return (image_x, image_y)
 
 
 
