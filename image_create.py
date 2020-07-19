@@ -3,9 +3,9 @@
 Matt Manzi
 Created: 2020-07-17
 
-Overlay each subject image on each background N times, at random
-positions and sizes, and generate the relevant annotation for Apple's
-CreateML.
+Overlay each subject image on each background N times, at random positions and
+sizes, and generate the relevant annotation for Apple's CreateML.  The generated
+image file will have the format of the background image that is used.
 
 Annotation Format:
 [
@@ -35,7 +35,9 @@ from argparse import ArgumentParser
 from PIL import Image
 
 
-#### MARK: Constants
+
+
+################################## CONSTANTS ##################################
 
 # generation params
 N = 10
@@ -49,12 +51,19 @@ IMG_BKGD = "background"
 IMG_DEST = "generated"
 ANO_FILE = "annotations.json"
 
+# other
+VERBOSITY = logging.WARNING
 
-#### MARK: Code
 
-# globals init
+
+
+#################################### CODE ####################################
+
+
+#### MARK: Globals Init
+
 logging.basicConfig(
-    level=logging.INFO,
+    level=VERBOSITY,
     format="[%(asctime)s] %(name)s %(levelname)s: %(message)s"
 )
 log = logging.getLogger("Image-Superimposer")
@@ -72,8 +81,24 @@ parser.add_argument("--no-scale",
     action="store_true",
     help="do not change the scale of the subject image (unexepected behavior \
     for subject image larger than background image)")
+parser.add_argument("-v", "--verbose",
+    action="count",
+    default=0,
+    help="increase the verbosity of log output (takes precedence over --quiet)")
+parser.add_argument("-q", "--quiet",
+    action="count",
+    default=0,
+    help="decrease the verbosity of log output (--verbose takes precedence)")
 args = parser.parse_args()
 
+# set user log level
+if args.verbose:
+    log.setLevel(max(VERBOSITY - (args.verbose * logging.DEBUG), logging.DEBUG))
+elif args.quiet:
+    log.setLevel(VERBOSITY + (args.quiet * logging.DEBUG))
+
+
+#### MARK: Script Execution
 
 def main():
 
@@ -100,8 +125,16 @@ def main():
     background_dir = os.path.join(img_dir, IMG_BKGD)
     dest_dir = os.path.join(img_dir, IMG_DEST)
 
+    # ensure dest directory exists
+    try:
+        os.mkdir(dest_dir)
 
-    log.warning("===================Begin Image Processing===================")
+    except FileExistsError:
+        log.debug("Destination directory %s exists, no action", dest_dir)
+
+
+    log.info("===================Begin Image Processing===================")
+
 
     # for each background
     for bkgd_file in os.listdir(background_dir):
@@ -109,11 +142,11 @@ def main():
 
         # choose extension from background, as per rules of paste
         ext = bkgd_file.split(".")[-1]
-        log.info("Set output extension: %s", ext)
+        log.debug("Set output extension: %s", ext)
 
         bkgd_p = Image.open(os.path.join(background_dir, bkgd_file))
         bkgd_file = bkgd_file.rstrip("." + ext)
-        log.info("Opened background: %s (ext stripped)", bkgd_file)
+        log.debug("Opened background: %s (ext stripped)", bkgd_file)
 
 
         # for each subject
@@ -122,11 +155,13 @@ def main():
 
             subj_p = Image.open(os.path.join(subj_dir, subj_file))
             subj_file = subj_file.rstrip("." + ext)
-            log.info("Opened subject: %s (ext stripped)", subj_file)
+            log.debug("Opened subject: %s (no ext)", subj_file)
 
 
             # for N variations
             for i in range(args.variations):
+                log.debug("Started variation: %d", i)
+
                 ano = copy.deepcopy(ano_tmp)
                 log.debug("Created template annotation deep copy")
 
@@ -170,22 +205,24 @@ def main():
 
             # done with this subject
             subj_p.close()
-            log.info("Closed subject: %s", subj_file)
+            log.debug("Closed subject: %s", subj_file)
 
 
         # done with this background
         bkgd_p.close()
-        log.info("Closed background: %s", bkgd_file)
+        log.debug("Closed background: %s", bkgd_file)
 
 
-    log.warning("====================End Image Processing====================")
+    log.info("====================End Image Processing====================")
 
     # store annotations
-    annotations_file = open(os.path.join(IMG_DIR, ANO_FILE), "w")
+    annotations_file = open(os.path.join(dest_dir, ANO_FILE), "w")
     annotations_file.write(json.dumps(annotations))
     annotations_file.close()
-    log.info("Wrote annotation to file: %s", ANO_FILE)
+    log.debug("Wrote annotations to file: %s", ANO_FILE)
 
+
+#### MARK: Helper functions
 
 def scale_to_background(subj_p, bkgd_p, annotation):
     """Scale the subject image up or down, relative to the background
@@ -212,6 +249,8 @@ def scale_to_background(subj_p, bkgd_p, annotation):
     return subj_p.resize((subj_w, subj_h))
 
 
+
+
 def place_on_background(subj_p, bkgd_p, annotation):
     """Chooses a position for the subject image on the background
 
@@ -234,6 +273,8 @@ def place_on_background(subj_p, bkgd_p, annotation):
     log.debug("Updated annotation position")
 
     return (position_x, position_y)
+
+
 
 
 main()
