@@ -1,6 +1,9 @@
-# environment
-env/
+# virtual environment
+venv/
 
 # images
 img/
 annotations.json
+
+# macOS
+.DS_Store
